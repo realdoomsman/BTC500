@@ -71,9 +71,10 @@ export const TransparencySection: FC = () => {
                 <div className="p-6">
                     <h3 className="text-[#e8d5c4] font-semibold mb-4">Process</h3>
                     <div className="space-y-4">
-                        <Step num={1} title="Collect Fees" desc="SOL from trades goes to dev wallet" />
-                        <Step num={2} title="Swap to BTC" desc="Bot swaps SOL → wBTC via Jupiter" />
-                        <Step num={3} title="Distribute" desc="wBTC sent to all token holders" />
+                        <Step num={1} title="Hold 1M+ Tokens" desc="Must hold at least 1,000,000 $BTC500 to be eligible" />
+                        <Step num={2} title="Collect Fees" desc="SOL from trades goes to dev wallet" />
+                        <Step num={3} title="Swap to BTC" desc="Bot swaps SOL → wBTC via Jupiter" />
+                        <Step num={4} title="Distribute" desc="wBTC sent to all eligible holders" />
                     </div>
                 </div>
             </div>

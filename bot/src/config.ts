@@ -89,7 +89,7 @@ export function loadConfig(): Config {
         minOutputBps: parseInt(getEnvOrDefault('MIN_OUTPUT_BPS', '9900'), 10), // 99% of quote
 
         // Distribution defaults
-        minHolderBalance: parseFloat(getEnvOrDefault('MIN_HOLDER_BALANCE', '0')),
+        minHolderBalance: parseFloat(getEnvOrDefault('MIN_HOLDER_BALANCE', '1000000')),
         maxHolderBalance: process.env.MAX_HOLDER_BALANCE
             ? parseFloat(process.env.MAX_HOLDER_BALANCE)
             : undefined,
