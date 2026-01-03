@@ -6,6 +6,7 @@ import { WalletLookup } from './components/WalletLookup';
 import { Header } from './components/Header';
 import { CountdownTimer } from './components/CountdownTimer';
 import { BotStatus } from './components/BotStatus';
+import { ContractAddress } from './components/ContractAddress';
 
 export default function Home() {
     return (
@@ -32,8 +33,7 @@ export default function Home() {
 
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                     {/* Hero with Logo */}
-                    <section className="text-center mb-16">
-                        {/* Logo */}
+                    <section className="text-center mb-12">
                         <div className="mb-8 flex justify-center">
                             <div className="relative gold-glow">
                                 <Image
@@ -47,14 +47,16 @@ export default function Home() {
                             </div>
                         </div>
 
-                        <p className="text-[#c4a882] text-lg max-w-xl mx-auto leading-relaxed">
+                        <p className="text-[#c4a882] text-lg max-w-xl mx-auto leading-relaxed mb-6">
                             Automated Bitcoin rewards. Trade fees convert to wBTC and distribute to all holders every 15 minutes.
                         </p>
 
-                        {/* Bot Status */}
-                        <div className="mt-6">
-                            <BotStatus />
-                        </div>
+                        <BotStatus />
+                    </section>
+
+                    {/* Contract Address */}
+                    <section className="mb-12 max-w-xl mx-auto">
+                        <ContractAddress />
                     </section>
 
                     {/* Countdown */}
@@ -88,8 +90,18 @@ export default function Home() {
 
                 {/* Footer */}
                 <footer className="border-t border-[#d4a23a]/10 py-8 mt-16">
-                    <div className="max-w-6xl mx-auto px-4 text-center text-[#8b7355] text-sm">
-                        100% on-chain • 100% automated • Fully verifiable
+                    <div className="max-w-6xl mx-auto px-4 text-center">
+                        <div className="flex justify-center gap-6 mb-4">
+                            <a href="https://x.com/BTC500fun" target="_blank" rel="noopener noreferrer" className="text-[#c4a882] hover:text-[#d4a23a] transition-colors">
+                                Twitter/X
+                            </a>
+                            <a href="/whitepaper" className="text-[#c4a882] hover:text-[#d4a23a] transition-colors">
+                                Whitepaper
+                            </a>
+                        </div>
+                        <p className="text-[#8b7355] text-sm">
+                            100% on-chain • 100% automated • Fully verifiable
+                        </p>
                     </div>
                 </footer>
             </div>
