@@ -7,6 +7,7 @@ import { Header } from './components/Header';
 import { CountdownTimer } from './components/CountdownTimer';
 import { BotStatus } from './components/BotStatus';
 import { ContractAddress } from './components/ContractAddress';
+import { BubblemapsExplainer } from './components/BubblemapsExplainer';
 
 export default function Home() {
     return (
@@ -82,9 +83,14 @@ export default function Home() {
                     </div>
 
                     {/* How It Works */}
-                    <section id="how-it-works" className="scroll-mt-24">
+                    <section id="how-it-works" className="scroll-mt-24 mb-16">
                         <h2 className="text-lg font-semibold text-gold-gradient mb-4">How It Works</h2>
                         <TransparencySection />
+                    </section>
+
+                    {/* Bubblemaps Explainer */}
+                    <section className="mb-16">
+                        <BubblemapsExplainer />
                     </section>
                 </div>
 
