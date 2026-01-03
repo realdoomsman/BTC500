@@ -83,7 +83,7 @@ export function loadConfig(): Config {
         wbtcMintAddress,
 
         // Safety defaults
-        minSolBalance: parseFloat(getEnvOrDefault('MIN_SOL_BALANCE', '0.5')),
+        minSolBalance: parseFloat(getEnvOrDefault('MIN_SOL_BALANCE', '0.01')),
         swapThreshold: parseFloat(getEnvOrDefault('SWAP_THRESHOLD', '0.1')),
         slippageBps: parseInt(getEnvOrDefault('SLIPPAGE_BPS', '100'), 10),
         minOutputBps: parseInt(getEnvOrDefault('MIN_OUTPUT_BPS', '9900'), 10), // 99% of quote
