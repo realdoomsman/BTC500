@@ -45,7 +45,7 @@ export default function Home() {
                             Automated Bitcoin rewards. Trade fees convert to wBTC and distribute to all holders every 15 minutes.
                         </p>
 
-                        <BotStatus />
+
                     </section>
 
                     {/* Contract Address */}
