@@ -1,0 +1,39 @@
+{
+  "name": "btc500-distribution-bot",
+  "version": "1.0.0",
+  "description": "Automated SOL to wBTC distribution bot for Pump.fun token holders",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "jest",
+    "test:devnet": "NETWORK=devnet tsx src/test-devnet.ts",
+    "distribute:dry-run": "DRY_RUN=true tsx src/index.ts --once"
+  },
+  "dependencies": {
+    "@jup-ag/api": "^6.0.29",
+    "@solana/spl-token": "^0.4.9",
+    "@solana/web3.js": "^1.98.0",
+    "better-sqlite3": "^11.6.0",
+    "bs58": "^6.0.0",
+    "dotenv": "^16.4.7",
+    "node-cron": "^3.0.3",
+    "pino": "^9.5.0",
+    "pino-pretty": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.2",
+    "@types/node-cron": "^3.0.11",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

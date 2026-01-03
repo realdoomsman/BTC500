@@ -1,0 +1,178 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Gold/Brown color palette from BTC500 logo */
+  --gold-light: #f5c542;
+  --gold: #d4a23a;
+  --gold-dark: #b8872e;
+  --brown-dark: #1a0f08;
+  --brown-medium: #2d1a0f;
+  --brown-light: #3d251a;
+  --glow-gold: rgba(212, 162, 58, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: linear-gradient(135deg, var(--brown-dark) 0%, #0d0704 100%);
+  color: #e8d5c4;
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* Gold gradient text */
+.text-gold-gradient {
+  background: linear-gradient(180deg, #f5c542 0%, #d4a23a 50%, #b8872e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gold glow effect */
+.gold-glow {
+  filter: drop-shadow(0 0 20px var(--glow-gold));
+}
+
+/* Globe wireframe background */
+.globe-bg {
+  background-image:
+    radial-gradient(circle at 50% 50%, transparent 30%, var(--brown-dark) 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cellipse cx='200' cy='200' rx='150' ry='150' fill='none' stroke='%23d4a23a' stroke-width='0.5' opacity='0.15'/%3E%3Cellipse cx='200' cy='200' rx='150' ry='75' fill='none' stroke='%23d4a23a' stroke-width='0.5' opacity='0.15'/%3E%3Cellipse cx='200' cy='200' rx='150' ry='40' fill='none' stroke='%23d4a23a' stroke-width='0.5' opacity='0.15'/%3E%3Cellipse cx='200' cy='200' rx='75' ry='150' fill='none' stroke='%23d4a23a' stroke-width='0.5' opacity='0.15'/%3E%3Cellipse cx='200' cy='200' rx='40' ry='150' fill='none' stroke='%23d4a23a' stroke-width='0.5' opacity='0.15'/%3E%3Cline x1='50' y1='200' x2='350' y2='200' stroke='%23d4a23a' stroke-width='0.5' opacity='0.15'/%3E%3Cline x1='200' y1='50' x2='200' y2='350' stroke='%23d4a23a' stroke-width='0.5' opacity='0.15'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 600px 600px;
+}
+
+/* Glass card with brown tint */
+.glass-card {
+  background: linear-gradient(135deg, rgba(45, 26, 15, 0.6) 0%, rgba(26, 15, 8, 0.4) 100%);
+  border: 1px solid rgba(212, 162, 58, 0.15);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+}
+
+.glass-card:hover {
+  border-color: rgba(212, 162, 58, 0.3);
+  box-shadow: 0 0 40px rgba(212, 162, 58, 0.1);
+}
+
+/* Sparkle animation */
+@keyframes sparkle {
+
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+/* Pulse glow */
+@keyframes pulse-gold {
+
+  0%,
+  100% {
+    box-shadow: 0 0 10px var(--glow-gold);
+  }
+
+  50% {
+    box-shadow: 0 0 30px var(--glow-gold), 0 0 60px rgba(212, 162, 58, 0.2);
+  }
+}
+
+.pulse-gold {
+  animation: pulse-gold 3s ease-in-out infinite;
+}
+
+/* Gold button */
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+  color: #1a0f08;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 12px 24px;
+  transition: all 0.2s;
+}
+
+.btn-gold:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px var(--glow-gold);
+}
+
+.btn-gold:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Input field */
+.input-gold {
+  background: rgba(26, 15, 8, 0.8);
+  border: 1px solid rgba(212, 162, 58, 0.2);
+  color: #e8d5c4;
+  padding: 12px 16px;
+  border-radius: 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-gold::placeholder {
+  color: rgba(232, 213, 196, 0.4);
+}
+
+.input-gold:focus {
+  border-color: var(--gold);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--brown-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gold-dark);
+  border-radius: 4px;
+}
+
+/* Bot status indicator */
+.status-live {
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-offline {
+  width: 10px;
+  height: 10px;
+  background: #6b7280;
+  border-radius: 50%;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+}
