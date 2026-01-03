@@ -1,5 +1,9 @@
 # BTC500 - Bitcoin Rewards Distribution System
 
+**Contract:** `FYVsj8WqTyL8HW79i1NrmyTyTt672K6NMDxPWJwFpump`
+
+[Twitter](https://x.com/BTC500fun) | [Pump.fun](https://pump.fun/FYVsj8WqTyL8HW79i1NrmyTyTt672K6NMDxPWJwFpump) | [Solscan](https://solscan.io/token/FYVsj8WqTyL8HW79i1NrmyTyTt672K6NMDxPWJwFpump)
+
 <p align="center">
   <img src="https://img.shields.io/badge/Solana-362D59?style=for-the-badge&logo=solana&logoColor=white" alt="Solana" />
   <img src="https://img.shields.io/badge/Bitcoin-F7931A?style=for-the-badge&logo=bitcoin&logoColor=white" alt="Bitcoin" />
