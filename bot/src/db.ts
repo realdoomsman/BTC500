@@ -1,5 +1,4 @@
-import Database from 'better-sqlite3';
-import path from 'path';
+import { createClient, Client } from '@libsql/client';
 import { createChildLogger } from './logger.js';
 
 const log = createChildLogger('db');
@@ -35,211 +34,209 @@ export interface TransferRecord {
 }
 
 export interface DatabaseManager {
-  // Swaps
-  insertSwap(record: Omit<SwapRecord, 'id'>): number;
-  updateSwap(id: number, btcAmount: number, txHash: string, status: SwapRecord['status'], error?: string): void;
-  updateSwapStatus(id: number, status: SwapRecord['status'], error?: string): void;
-  getRecentSwaps(limit?: number): SwapRecord[];
-  getTotalSwapped(): { total_sol: number; total_btc: number };
+  insertSwap(record: Omit<SwapRecord, 'id'>): Promise<number>;
+  updateSwap(id: number, btcAmount: number, txHash: string, status: SwapRecord['status'], error?: string): Promise<void>;
+  updateSwapStatus(id: number, status: SwapRecord['status'], error?: string): Promise<void>;
+  getRecentSwaps(limit?: number): Promise<SwapRecord[]>;
+  getTotalSwapped(): Promise<{ total_sol: number; total_btc: number }>;
 
-  // Distributions
-  insertDistribution(record: Omit<DistributionRecord, 'id'>): number;
-  updateDistributionStatus(id: number, status: DistributionRecord['status'], error?: string): void;
-  getDistributionById(distributionId: string): DistributionRecord | null;
-  getRecentDistributions(limit?: number): DistributionRecord[];
-  getTotalDistributed(): number;
-  getLastDistribution(): DistributionRecord | null;
+  insertDistribution(record: Omit<DistributionRecord, 'id'>): Promise<number>;
+  updateDistributionStatus(id: number, status: DistributionRecord['status'], error?: string): Promise<void>;
+  getDistributionById(distributionId: string): Promise<DistributionRecord | null>;
+  getRecentDistributions(limit?: number): Promise<DistributionRecord[]>;
+  getTotalDistributed(): Promise<number>;
+  getLastDistribution(): Promise<DistributionRecord | null>;
 
-  // Transfers
-  insertTransfer(record: Omit<TransferRecord, 'id'>): number;
-  updateTransferStatus(id: number, status: TransferRecord['status'], txHash?: string, error?: string): void;
-  getTransfersByDistribution(distributionId: string): TransferRecord[];
-  getTransfersByHolder(holderAddress: string): TransferRecord[];
-  getPendingTransfers(distributionId: string): TransferRecord[];
+  insertTransfer(record: Omit<TransferRecord, 'id'>): Promise<number>;
+  updateTransferStatus(id: number, status: TransferRecord['status'], txHash?: string, error?: string): Promise<void>;
+  getTransfersByDistribution(distributionId: string): Promise<TransferRecord[]>;
+  getTransfersByHolder(holderAddress: string): Promise<TransferRecord[]>;
+  getPendingTransfers(distributionId: string): Promise<TransferRecord[]>;
 
-  // Utility
   close(): void;
 }
 
-export function createDatabaseManager(dbPath?: string): DatabaseManager {
-  const resolvedPath = dbPath || path.join(process.cwd(), 'data', 'btc500.db');
+export function createDatabaseManager(): DatabaseManager {
+  const url = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
 
-  // Ensure directory exists
-  const dir = path.dirname(resolvedPath);
-  import('fs').then(fs => {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-  });
+  if (!url || !authToken) {
+    throw new Error('TURSO_DATABASE_URL and TURSO_AUTH_TOKEN must be set');
+  }
 
-  const db = new Database(resolvedPath);
-  db.pragma('journal_mode = WAL');
+  const client = createClient({ url, authToken });
 
-  log.info({ path: resolvedPath }, 'Database initialized');
+  log.info('Connected to Turso cloud database');
 
-  // Create tables
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS swaps (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      timestamp TEXT NOT NULL,
-      sol_amount REAL NOT NULL,
-      btc_amount REAL NOT NULL,
-      tx_hash TEXT NOT NULL UNIQUE,
-      status TEXT NOT NULL DEFAULT 'pending',
-      error TEXT
-    );
-    
-    CREATE TABLE IF NOT EXISTS distributions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      distribution_id TEXT NOT NULL UNIQUE,
-      timestamp TEXT NOT NULL,
-      total_btc REAL NOT NULL,
-      holder_count INTEGER NOT NULL,
-      status TEXT NOT NULL DEFAULT 'pending',
-      error TEXT
-    );
-    
-    CREATE TABLE IF NOT EXISTS transfers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      distribution_id TEXT NOT NULL,
-      holder_address TEXT NOT NULL,
-      btc_amount REAL NOT NULL,
-      tx_hash TEXT,
-      status TEXT NOT NULL DEFAULT 'pending',
-      error TEXT,
-      FOREIGN KEY (distribution_id) REFERENCES distributions(distribution_id)
-    );
-    
-    CREATE INDEX IF NOT EXISTS idx_transfers_distribution ON transfers(distribution_id);
-    CREATE INDEX IF NOT EXISTS idx_transfers_holder ON transfers(holder_address);
-    CREATE INDEX IF NOT EXISTS idx_swaps_timestamp ON swaps(timestamp);
-    CREATE INDEX IF NOT EXISTS idx_distributions_timestamp ON distributions(timestamp);
-  `);
+  // Initialize tables
+  (async () => {
+    await client.execute(`
+            CREATE TABLE IF NOT EXISTS swaps (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                sol_amount REAL NOT NULL,
+                btc_amount REAL NOT NULL,
+                tx_hash TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                error TEXT
+            )
+        `);
 
-  // Prepared statements
-  const insertSwapStmt = db.prepare(`
-    INSERT INTO swaps (timestamp, sol_amount, btc_amount, tx_hash, status, error)
-    VALUES (@timestamp, @sol_amount, @btc_amount, @tx_hash, @status, @error)
-  `);
+    await client.execute(`
+            CREATE TABLE IF NOT EXISTS distributions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                distribution_id TEXT NOT NULL UNIQUE,
+                timestamp TEXT NOT NULL,
+                total_btc REAL NOT NULL,
+                holder_count INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                error TEXT
+            )
+        `);
 
-  const updateSwapStatusStmt = db.prepare(`
-    UPDATE swaps SET status = ?, error = ? WHERE id = ?
-  `);
+    await client.execute(`
+            CREATE TABLE IF NOT EXISTS transfers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                distribution_id TEXT NOT NULL,
+                holder_address TEXT NOT NULL,
+                btc_amount REAL NOT NULL,
+                tx_hash TEXT,
+                status TEXT NOT NULL DEFAULT 'pending',
+                error TEXT
+            )
+        `);
 
-  const insertDistributionStmt = db.prepare(`
-    INSERT INTO distributions (distribution_id, timestamp, total_btc, holder_count, status, error)
-    VALUES (@distribution_id, @timestamp, @total_btc, @holder_count, @status, @error)
-  `);
-
-  const updateDistributionStatusStmt = db.prepare(`
-    UPDATE distributions SET status = ?, error = ? WHERE id = ?
-  `);
-
-  const insertTransferStmt = db.prepare(`
-    INSERT INTO transfers (distribution_id, holder_address, btc_amount, tx_hash, status, error)
-    VALUES (@distribution_id, @holder_address, @btc_amount, @tx_hash, @status, @error)
-  `);
-
-  const updateTransferStatusStmt = db.prepare(`
-    UPDATE transfers SET status = ?, tx_hash = COALESCE(?, tx_hash), error = ? WHERE id = ?
-  `);
+    log.info('Database tables initialized');
+  })();
 
   return {
-    insertSwap(record) {
-      const result = insertSwapStmt.run(record);
-      return result.lastInsertRowid as number;
+    async insertSwap(record) {
+      const result = await client.execute({
+        sql: `INSERT INTO swaps (timestamp, sol_amount, btc_amount, tx_hash, status, error)
+                      VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [record.timestamp, record.sol_amount, record.btc_amount, record.tx_hash, record.status, record.error || null]
+      });
+      return Number(result.lastInsertRowid);
     },
 
-    updateSwap(id, btcAmount, txHash, status, error) {
-      db.prepare(`
-        UPDATE swaps SET btc_amount = ?, tx_hash = ?, status = ?, error = ? WHERE id = ?
-      `).run(btcAmount, txHash, status, error || null, id);
+    async updateSwap(id, btcAmount, txHash, status, error) {
+      await client.execute({
+        sql: `UPDATE swaps SET btc_amount = ?, tx_hash = ?, status = ?, error = ? WHERE id = ?`,
+        args: [btcAmount, txHash, status, error || null, id]
+      });
     },
 
-    updateSwapStatus(id, status, error) {
-      updateSwapStatusStmt.run(status, error || null, id);
+    async updateSwapStatus(id, status, error) {
+      await client.execute({
+        sql: `UPDATE swaps SET status = ?, error = ? WHERE id = ?`,
+        args: [status, error || null, id]
+      });
     },
 
-    getRecentSwaps(limit = 50) {
-      return db.prepare(`
-        SELECT * FROM swaps ORDER BY timestamp DESC LIMIT ?
-      `).all(limit) as SwapRecord[];
+    async getRecentSwaps(limit = 50) {
+      const result = await client.execute({
+        sql: `SELECT * FROM swaps ORDER BY timestamp DESC LIMIT ?`,
+        args: [limit]
+      });
+      return result.rows as unknown as SwapRecord[];
     },
 
-    getTotalSwapped() {
-      const result = db.prepare(`
-        SELECT COALESCE(SUM(sol_amount), 0) as total_sol, 
-               COALESCE(SUM(btc_amount), 0) as total_btc 
-        FROM swaps WHERE status = 'success'
-      `).get() as { total_sol: number; total_btc: number };
-      return result;
+    async getTotalSwapped() {
+      const result = await client.execute(
+        `SELECT COALESCE(SUM(sol_amount), 0) as total_sol, COALESCE(SUM(btc_amount), 0) as total_btc FROM swaps WHERE status = 'success'`
+      );
+      const row = result.rows[0];
+      return { total_sol: Number(row.total_sol), total_btc: Number(row.total_btc) };
     },
 
-    insertDistribution(record) {
-      const result = insertDistributionStmt.run(record);
-      return result.lastInsertRowid as number;
+    async insertDistribution(record) {
+      const result = await client.execute({
+        sql: `INSERT INTO distributions (distribution_id, timestamp, total_btc, holder_count, status, error)
+                      VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [record.distribution_id, record.timestamp, record.total_btc, record.holder_count, record.status, record.error || null]
+      });
+      return Number(result.lastInsertRowid);
     },
 
-    updateDistributionStatus(id, status, error) {
-      updateDistributionStatusStmt.run(status, error || null, id);
+    async updateDistributionStatus(id, status, error) {
+      await client.execute({
+        sql: `UPDATE distributions SET status = ?, error = ? WHERE id = ?`,
+        args: [status, error || null, id]
+      });
     },
 
-    getDistributionById(distributionId) {
-      return db.prepare(`
-        SELECT * FROM distributions WHERE distribution_id = ?
-      `).get(distributionId) as DistributionRecord | null;
+    async getDistributionById(distributionId) {
+      const result = await client.execute({
+        sql: `SELECT * FROM distributions WHERE distribution_id = ?`,
+        args: [distributionId]
+      });
+      return result.rows[0] as unknown as DistributionRecord || null;
     },
 
-    getRecentDistributions(limit = 50) {
-      return db.prepare(`
-        SELECT * FROM distributions ORDER BY timestamp DESC LIMIT ?
-      `).all(limit) as DistributionRecord[];
+    async getRecentDistributions(limit = 50) {
+      const result = await client.execute({
+        sql: `SELECT * FROM distributions ORDER BY timestamp DESC LIMIT ?`,
+        args: [limit]
+      });
+      return result.rows as unknown as DistributionRecord[];
     },
 
-    getTotalDistributed() {
-      const result = db.prepare(`
-        SELECT COALESCE(SUM(total_btc), 0) as total 
-        FROM distributions WHERE status = 'success'
-      `).get() as { total: number };
-      return result.total;
+    async getTotalDistributed() {
+      const result = await client.execute(
+        `SELECT COALESCE(SUM(total_btc), 0) as total FROM distributions WHERE status = 'success'`
+      );
+      return Number(result.rows[0].total);
     },
 
-    getLastDistribution() {
-      return db.prepare(`
-        SELECT * FROM distributions ORDER BY timestamp DESC LIMIT 1
-      `).get() as DistributionRecord | null;
+    async getLastDistribution() {
+      const result = await client.execute(
+        `SELECT * FROM distributions ORDER BY timestamp DESC LIMIT 1`
+      );
+      return result.rows[0] as unknown as DistributionRecord || null;
     },
 
-    insertTransfer(record) {
-      const result = insertTransferStmt.run(record);
-      return result.lastInsertRowid as number;
+    async insertTransfer(record) {
+      const result = await client.execute({
+        sql: `INSERT INTO transfers (distribution_id, holder_address, btc_amount, tx_hash, status, error)
+                      VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [record.distribution_id, record.holder_address, record.btc_amount, record.tx_hash || null, record.status, record.error || null]
+      });
+      return Number(result.lastInsertRowid);
     },
 
-    updateTransferStatus(id, status, txHash, error) {
-      updateTransferStatusStmt.run(status, txHash || null, error || null, id);
+    async updateTransferStatus(id, status, txHash, error) {
+      await client.execute({
+        sql: `UPDATE transfers SET status = ?, tx_hash = COALESCE(?, tx_hash), error = ? WHERE id = ?`,
+        args: [status, txHash || null, error || null, id]
+      });
     },
 
-    getTransfersByDistribution(distributionId) {
-      return db.prepare(`
-        SELECT * FROM transfers WHERE distribution_id = ?
-      `).all(distributionId) as TransferRecord[];
+    async getTransfersByDistribution(distributionId) {
+      const result = await client.execute({
+        sql: `SELECT * FROM transfers WHERE distribution_id = ?`,
+        args: [distributionId]
+      });
+      return result.rows as unknown as TransferRecord[];
     },
 
-    getTransfersByHolder(holderAddress) {
-      return db.prepare(`
-        SELECT * FROM transfers WHERE holder_address = ? AND status = 'success'
-        ORDER BY id DESC
-      `).all(holderAddress) as TransferRecord[];
+    async getTransfersByHolder(holderAddress) {
+      const result = await client.execute({
+        sql: `SELECT * FROM transfers WHERE holder_address = ? AND status = 'success' ORDER BY id DESC`,
+        args: [holderAddress]
+      });
+      return result.rows as unknown as TransferRecord[];
     },
 
-    getPendingTransfers(distributionId) {
-      return db.prepare(`
-        SELECT * FROM transfers WHERE distribution_id = ? AND status = 'pending'
-      `).all(distributionId) as TransferRecord[];
+    async getPendingTransfers(distributionId) {
+      const result = await client.execute({
+        sql: `SELECT * FROM transfers WHERE distribution_id = ? AND status = 'pending'`,
+        args: [distributionId]
+      });
+      return result.rows as unknown as TransferRecord[];
     },
 
     close() {
-      db.close();
+      client.close();
       log.info('Database connection closed');
     },
   };

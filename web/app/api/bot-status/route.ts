@@ -1,53 +1,62 @@
 import { NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+import { createClient } from '@libsql/client';
 
-const DB_PATH = path.join(process.cwd(), '..', 'bot', 'data', 'btc500.db');
+function getClient() {
+    const url = process.env.TURSO_DATABASE_URL;
+    const authToken = process.env.TURSO_AUTH_TOKEN;
+
+    if (!url || !authToken) {
+        return null;
+    }
+
+    return createClient({ url, authToken });
+}
 
 export async function GET() {
+    const client = getClient();
+
+    if (!client) {
+        return NextResponse.json({
+            isLive: false,
+            lastActivity: null,
+            nextRun: getNextDistributionTime(),
+            currentAction: null,
+        });
+    }
+
     try {
-        // Check if database exists (means bot has run at least once)
-        if (!fs.existsSync(DB_PATH)) {
-            return NextResponse.json({
-                isLive: false,
-                lastActivity: null,
-                nextRun: getNextDistributionTime(),
-                currentAction: null,
-            });
-        }
-
-        const db = new Database(DB_PATH, { readonly: true });
-
         // Get most recent activity
-        const lastSwap = db.prepare(`
-      SELECT timestamp FROM swaps ORDER BY timestamp DESC LIMIT 1
-    `).get() as { timestamp: string } | undefined;
+        const lastSwapResult = await client.execute(
+            `SELECT timestamp FROM swaps ORDER BY timestamp DESC LIMIT 1`
+        );
+        const lastSwap = lastSwapResult.rows[0];
 
-        const lastDist = db.prepare(`
-      SELECT timestamp FROM distributions ORDER BY timestamp DESC LIMIT 1
-    `).get() as { timestamp: string } | undefined;
+        const lastDistResult = await client.execute(
+            `SELECT timestamp FROM distributions ORDER BY timestamp DESC LIMIT 1`
+        );
+        const lastDist = lastDistResult.rows[0];
 
-        // Check for pending/in_progress distributions (bot is actively working)
-        const activeWork = db.prepare(`
-      SELECT * FROM distributions WHERE status = 'in_progress' LIMIT 1
-    `).get();
+        // Check for in-progress distributions
+        const activeResult = await client.execute(
+            `SELECT * FROM distributions WHERE status = 'in_progress' LIMIT 1`
+        );
+        const activeWork = activeResult.rows[0];
 
-        db.close();
+        client.close();
 
         // Determine last activity
         let lastActivity: string | null = null;
-        if (lastSwap && lastDist) {
-            lastActivity = new Date(lastSwap.timestamp) > new Date(lastDist.timestamp)
-                ? lastSwap.timestamp
-                : lastDist.timestamp;
-        } else if (lastSwap) {
-            lastActivity = lastSwap.timestamp;
-        } else if (lastDist) {
-            lastActivity = lastDist.timestamp;
+        if (lastSwap?.timestamp && lastDist?.timestamp) {
+            lastActivity = new Date(String(lastSwap.timestamp)) > new Date(String(lastDist.timestamp))
+                ? String(lastSwap.timestamp)
+                : String(lastDist.timestamp);
+        } else if (lastSwap?.timestamp) {
+            lastActivity = String(lastSwap.timestamp);
+        } else if (lastDist?.timestamp) {
+            lastActivity = String(lastDist.timestamp);
         }
 
-        // Consider bot "live" if activity within last 20 minutes
+        // Bot is "live" if activity within last 20 minutes
         const isLive = lastActivity
             ? (Date.now() - new Date(lastActivity).getTime()) < 20 * 60 * 1000
             : false;

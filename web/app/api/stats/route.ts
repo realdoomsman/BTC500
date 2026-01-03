@@ -1,94 +1,77 @@
 import { NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+import { createClient } from '@libsql/client';
 
-// Path to the bot's database
-const DB_PATH = path.join(process.cwd(), '..', 'bot', 'data', 'btc500.db');
+function getClient() {
+    const url = process.env.TURSO_DATABASE_URL;
+    const authToken = process.env.TURSO_AUTH_TOKEN;
 
-interface SwapRecord {
-    timestamp: string;
-    sol_amount: number;
-    btc_amount: number;
-    tx_hash: string;
-    status: string;
-}
+    if (!url || !authToken) {
+        return null;
+    }
 
-interface DistributionRecord {
-    timestamp: string;
-    total_btc: number;
-    holder_count: number;
-    distribution_id: string;
-    status: string;
+    return createClient({ url, authToken });
 }
 
 export async function GET() {
+    const client = getClient();
+
+    if (!client) {
+        // Return zeros if not configured
+        return NextResponse.json({
+            totalSolCollected: 0,
+            totalBtcDistributed: 0,
+            lastSwapTimestamp: null,
+            nextDistributionTimestamp: getNextDistributionTime(),
+            holderCount: 0,
+            distributionCount: 0,
+            recentSwaps: [],
+            recentDistributions: [],
+        });
+    }
+
     try {
-        // Check if database exists
-        if (!fs.existsSync(DB_PATH)) {
-            // Return zeros if bot hasn't run yet
-            return NextResponse.json({
-                totalSolCollected: 0,
-                totalBtcDistributed: 0,
-                lastSwapTimestamp: null,
-                nextDistributionTimestamp: getNextDistributionTime(),
-                holderCount: 0,
-                distributionCount: 0,
-                recentSwaps: [],
-                recentDistributions: [],
-            });
-        }
-
-        const db = new Database(DB_PATH, { readonly: true });
-
         // Get totals
-        const totals = db.prepare(`
-      SELECT COALESCE(SUM(sol_amount), 0) as total_sol, 
-             COALESCE(SUM(btc_amount), 0) as total_btc 
-      FROM swaps WHERE status = 'success'
-    `).get() as { total_sol: number; total_btc: number };
+        const totalsResult = await client.execute(
+            `SELECT COALESCE(SUM(sol_amount), 0) as total_sol, COALESCE(SUM(btc_amount), 0) as total_btc FROM swaps WHERE status = 'success'`
+        );
+        const totals = totalsResult.rows[0];
 
-        const distTotal = db.prepare(`
-      SELECT COALESCE(SUM(total_btc), 0) as total,
-             COUNT(*) as count
-      FROM distributions WHERE status = 'success'
-    `).get() as { total: number; count: number };
+        const distTotalResult = await client.execute(
+            `SELECT COALESCE(SUM(total_btc), 0) as total, COUNT(*) as count FROM distributions WHERE status = 'success'`
+        );
+        const distTotal = distTotalResult.rows[0];
 
         // Get last distribution
-        const lastDist = db.prepare(`
-      SELECT * FROM distributions ORDER BY timestamp DESC LIMIT 1
-    `).get() as DistributionRecord | undefined;
+        const lastDistResult = await client.execute(
+            `SELECT * FROM distributions ORDER BY timestamp DESC LIMIT 1`
+        );
+        const lastDist = lastDistResult.rows[0];
 
         // Get recent swaps
-        const recentSwaps = db.prepare(`
-      SELECT timestamp, sol_amount as solAmount, btc_amount as btcAmount, tx_hash as txHash
-      FROM swaps WHERE status = 'success' 
-      ORDER BY timestamp DESC LIMIT 10
-    `).all() as Array<{ timestamp: string; solAmount: number; btcAmount: number; txHash: string }>;
+        const recentSwapsResult = await client.execute(
+            `SELECT timestamp, sol_amount as solAmount, btc_amount as btcAmount, tx_hash as txHash FROM swaps WHERE status = 'success' ORDER BY timestamp DESC LIMIT 10`
+        );
 
         // Get recent distributions
-        const recentDistributions = db.prepare(`
-      SELECT timestamp, total_btc as btcAmount, holder_count as holderCount, distribution_id as txHash
-      FROM distributions WHERE status = 'success'
-      ORDER BY timestamp DESC LIMIT 10
-    `).all() as Array<{ timestamp: string; btcAmount: number; holderCount: number; txHash: string }>;
+        const recentDistResult = await client.execute(
+            `SELECT timestamp, total_btc as btcAmount, holder_count as holderCount, distribution_id as txHash FROM distributions WHERE status = 'success' ORDER BY timestamp DESC LIMIT 10`
+        );
 
-        db.close();
+        client.close();
 
         return NextResponse.json({
-            totalSolCollected: totals.total_sol,
-            totalBtcDistributed: distTotal.total,
+            totalSolCollected: Number(totals?.total_sol || 0),
+            totalBtcDistributed: Number(distTotal?.total || 0),
             lastSwapTimestamp: lastDist?.timestamp || null,
             nextDistributionTimestamp: getNextDistributionTime(),
-            holderCount: lastDist?.holder_count || 0,
-            distributionCount: distTotal.count,
-            recentSwaps,
-            recentDistributions,
+            holderCount: Number(lastDist?.holder_count || 0),
+            distributionCount: Number(distTotal?.count || 0),
+            recentSwaps: recentSwapsResult.rows,
+            recentDistributions: recentDistResult.rows,
         });
 
     } catch (error) {
         console.error('Stats API error:', error);
-        // Return zeros on error
         return NextResponse.json({
             totalSolCollected: 0,
             totalBtcDistributed: 0,

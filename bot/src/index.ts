@@ -156,7 +156,7 @@ async function executeCycle(ctx: BotContext): Promise<void> {
         const swapAmount = distributableSol;
         log.info({ amount: `${swapAmount.toFixed(4)} SOL` }, 'Swapping SOL → wBTC');
 
-        const swapRecordId = db.insertSwap({
+        const swapRecordId = await db.insertSwap({
             timestamp: new Date().toISOString(),
             sol_amount: swapAmount,
             btc_amount: 0,
@@ -167,12 +167,12 @@ async function executeCycle(ctx: BotContext): Promise<void> {
         const swapResult = await jupiter.executeSwap(swapAmount);
 
         if (!swapResult.success) {
-            db.updateSwapStatus(swapRecordId, 'failed', swapResult.error);
+            await db.updateSwapStatus(swapRecordId, 'failed', swapResult.error);
             log.error({ error: swapResult.error }, 'Swap failed');
             return;
         }
 
-        db.updateSwap(
+        await db.updateSwap(
             swapRecordId,
             swapResult.outputAmount,
             swapResult.txHash || '',
