@@ -48,10 +48,10 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             tokenBalance: 0,
-            btcEarned: totalEarned,
+            btcEarned: totalEarned / 1e8,
             distributions: transfers.length,
             transfers: transfers.slice(0, 10).map(t => ({
-                amount: Number(t.btc_amount),
+                amount: Number(t.btc_amount) / 1e8,
                 txHash: t.tx_hash,
             })),
         });

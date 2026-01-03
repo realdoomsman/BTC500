@@ -4,7 +4,6 @@ import { TransparencySection } from './components/TransparencySection';
 import { TransactionFeed } from './components/TransactionFeed';
 import { WalletLookup } from './components/WalletLookup';
 import { Header } from './components/Header';
-import { CountdownTimer } from './components/CountdownTimer';
 import { BotStatus } from './components/BotStatus';
 import { ContractAddress } from './components/ContractAddress';
 import { BubblemapsExplainer } from './components/BubblemapsExplainer';
@@ -21,13 +20,7 @@ export default function Home() {
                 <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-[#d4a23a]/3 rounded-full blur-[100px]" />
             </div>
 
-            {/* Sparkles */}
-            <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-[20%] left-[15%] w-2 h-2 bg-[#f5c542] rounded-full sparkle" style={{ animationDelay: '0s' }} />
-                <div className="absolute top-[30%] right-[20%] w-1.5 h-1.5 bg-[#f5c542] rounded-full sparkle" style={{ animationDelay: '0.5s' }} />
-                <div className="absolute bottom-[40%] left-[25%] w-1 h-1 bg-[#f5c542] rounded-full sparkle" style={{ animationDelay: '1s' }} />
-                <div className="absolute bottom-[25%] right-[15%] w-2 h-2 bg-[#f5c542] rounded-full sparkle" style={{ animationDelay: '1.5s' }} />
-            </div>
+
 
             <div className="relative z-10">
                 <Header />
@@ -60,26 +53,17 @@ export default function Home() {
                         <ContractAddress />
                     </section>
 
-                    {/* Countdown */}
-                    <section className="mb-16">
-                        <CountdownTimer />
-                    </section>
+
 
                     {/* Stats */}
                     <section id="stats" className="mb-16 scroll-mt-24">
                         <StatsCards />
                     </section>
 
-                    {/* Main Grid */}
-                    <div id="activity" className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-16 scroll-mt-24">
-                        <div className="lg:col-span-3">
-                            <h2 className="text-lg font-semibold text-gold-gradient mb-4">Activity</h2>
-                            <TransactionFeed />
-                        </div>
-                        <div className="lg:col-span-2">
-                            <h2 className="text-lg font-semibold text-gold-gradient mb-4">Your Rewards</h2>
-                            <WalletLookup />
-                        </div>
+                    {/* Your Rewards */}
+                    <div className="mb-16 max-w-md mx-auto">
+                        <h2 className="text-lg font-semibold text-gold-gradient mb-4">Your Rewards</h2>
+                        <WalletLookup />
                     </div>
 
                     {/* How It Works */}

@@ -40,16 +40,6 @@ export const Header: FC = () => {
                             Stats
                         </a>
                         <a
-                            href="#activity"
-                            className="text-[#c4a882] hover:text-[#f5c542] transition-colors text-sm"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                document.getElementById('activity')?.scrollIntoView({ behavior: 'smooth' });
-                            }}
-                        >
-                            Activity
-                        </a>
-                        <a
                             href="#how-it-works"
                             className="text-[#c4a882] hover:text-[#f5c542] transition-colors text-sm"
                             onClick={(e) => {

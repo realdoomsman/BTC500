@@ -61,13 +61,19 @@ export async function GET() {
 
         return NextResponse.json({
             totalSolCollected: Number(totals?.total_sol || 0),
-            totalBtcDistributed: Number(distTotal?.total || 0),
+            totalBtcDistributed: Number(distTotal?.total || 0) / 1e8,
             lastSwapTimestamp: lastDist?.timestamp || null,
             nextDistributionTimestamp: getNextDistributionTime(),
             holderCount: Number(lastDist?.holder_count || 0),
             distributionCount: Number(distTotal?.count || 0),
-            recentSwaps: recentSwapsResult.rows,
-            recentDistributions: recentDistResult.rows,
+            recentSwaps: recentSwapsResult.rows.map(r => ({
+                ...r,
+                btcAmount: Number(r.btcAmount) / 1e8
+            })),
+            recentDistributions: recentDistResult.rows.map(r => ({
+                ...r,
+                btcAmount: Number(r.btcAmount) / 1e8
+            })),
         });
 
     } catch (error) {
