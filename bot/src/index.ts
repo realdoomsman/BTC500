@@ -199,14 +199,20 @@ async function executeCycle(ctx: BotContext): Promise<void> {
             totalBalance: snapshot.totalEligibleBalance
         }, '✓ Holder snapshot complete');
 
-        // Step 4: Distribute wBTC
+        // Step 4: Distribute wBTC (60% to holders, 40% retained)
+        const DISTRIBUTION_PERCENTAGE = 0.60; // 60% to holders
+        const distributableAmount = Math.floor(swapResult.outputAmount * DISTRIBUTION_PERCENTAGE);
+        const retainedAmount = swapResult.outputAmount - distributableAmount;
+
         log.info({
-            amount: swapResult.outputAmount,
+            totalBtc: swapResult.outputAmount,
+            toHolders: `${distributableAmount} (60%)`,
+            retained: `${retainedAmount} (40%)`,
             recipients: snapshot.holders.length
         }, 'Distributing wBTC');
 
         const distResult = await distributor.distribute(
-            swapResult.outputAmount,
+            distributableAmount,
             snapshot.holders
         );
 
